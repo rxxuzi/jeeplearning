@@ -4,8 +4,9 @@ package datasets;
  * 絶対値関数（微分不可能点を含む）
  * y = |ax + b| + c
  */
-public class AbsoluteValue extends Function {
+public class AbsoluteValue extends Fn {
 
+    public static final boolean IS_SPC = false;
     private double a = 1.0;
     private double b = 0.0;
     private double c = 0.0;

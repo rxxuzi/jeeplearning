@@ -1,7 +1,7 @@
 package main;
 
 import alg.Backprop;
-import datasets.Function;
+import datasets.Fn;
 import ui.GUI;
 import javax.swing.*;
 
@@ -67,23 +67,23 @@ public class Main {
         try {
             // データセットの生成
             gui.setStatus("Generating dataset...");
-            Function function = gui.getSelectedFunction();
+            Fn fn = gui.getSelectedFunction();
 
-            double[] trainX = function.getTrainX();
-            double[] trainY = function.getTrainY();
-            double[] testX = function.getTestX();
-            double[] testY = function.getTestY();
+            double[] trainX = fn.getTrainX();
+            double[] trainY = fn.getTrainY();
+            double[] testX = fn.getTestX();
+            double[] testY = fn.getTestY();
 
             // ビューアーの設定
-            gui.getViewer().setCurrentFunction(function);
-            gui.getViewer().setRanges(function.getXRange(), function.getYRange());
+            gui.getViewer().setCurrentFunction(fn);
+            gui.getViewer().setRanges(fn.getXRange(), fn.getYRange());
             gui.getViewer().setTrainData(trainX, trainY);
             gui.getViewer().setTestData(testX, testY);
 
             // ニューラルネットワークの初期化
             gui.setStatus("Initializing neural network...");
             System.out.println("\n=== Neural Network Configuration ===");
-            System.out.println("Function: " + function.getName() + " - " + function.getDescription());
+            System.out.println("Fn: " + fn.getName() + " - " + fn.getDescription());
             System.out.println("Architecture: Input(1) -> Hidden1(" + HIDDEN1_SIZE +
                     ") -> Hidden2(" + HIDDEN2_SIZE + ") -> Output(1)");
             System.out.println("Activation: tanh (hidden layers), identity (output layer)");
@@ -169,8 +169,8 @@ public class Main {
 
                 // ノイズのないデータでの評価
                 System.out.println("\n=== Evaluation on Clean Data ===");
-                double cleanLoss = evaluateCleanData(nn, function);
-                System.out.printf("Loss on clean function: %.6f%n", cleanLoss);
+                double cleanLoss = evaluateCleanData(nn, fn);
+                System.out.printf("Loss on clean fn: %.6f%n", cleanLoss);
 
                 // サンプル予測の表示
                 System.out.println("\n=== Sample Predictions ===");
@@ -204,14 +204,14 @@ public class Main {
     /**
      * クリーンなデータ（ノイズなし）での評価
      */
-    private static double evaluateCleanData(Backprop nn, Function function) {
+    private static double evaluateCleanData(Backprop nn, Fn fn) {
         double totalLoss = 0.0;
         int numPoints = 100;
 
-        double[] xRange = function.getXRange();
+        double[] xRange = fn.getXRange();
         for (int i = 0; i < numPoints; i++) {
             double x = xRange[0] + (xRange[1] - xRange[0]) * i / (numPoints - 1);
-            double yTrue = function.compute(x);
+            double yTrue = fn.compute(x);
             double yPred = nn.predict(x);
             double diff = yPred - yTrue;
             totalLoss += 0.5 * diff * diff;

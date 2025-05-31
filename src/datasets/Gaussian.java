@@ -4,8 +4,9 @@ package datasets;
  * ガウス関数（正規分布曲線）
  * y = a * exp(-(x-μ)²/(2σ²))
  */
-public class Gaussian extends Function {
+public class Gaussian extends Fn {
 
+    public static final boolean IS_SPC = false;
     private double a = 1.0;    // 振幅
     private double mu = 0.0;   // 平均
     private double sigma = 1.0; // 標準偏差

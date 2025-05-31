@@ -4,8 +4,9 @@ package datasets;
  * チャープ信号（周波数が増加する正弦波）
  * y = sin(2π(f0 + kt)t)
  */
-public class Chirp extends Function {
+public class Chirp extends Fn {
 
+    public static final boolean IS_SPC = false;
     private double f0 = 1.0;  // 初期周波数
     private double k = 0.5;   // 周波数変化率
 

@@ -3,8 +3,9 @@ package datasets;
 /**
  * 2次関数 y = ax² + bx + c
  */
-public class Quadratic extends Function {
+public class Quadratic extends Fn {
 
+    public static final boolean IS_SPC = false;
     private double a = 1.0;   // x²の係数
     private double b = -2.0;  // xの係数
     private double c = 0.0;   // 定数項

@@ -5,12 +5,13 @@ import java.util.Random;
 /**
  * 回帰分析用の関数の基底クラス
  */
-public abstract class Function {
+public abstract class Fn {
 
     protected double[] trainX;
     protected double[] trainY;
     protected double[] testX;
     protected double[] testY;
+
 
     protected Random rand = new Random();
     protected double noiseRate = 0.0;

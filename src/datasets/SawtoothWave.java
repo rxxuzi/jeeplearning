@@ -3,8 +3,9 @@ package datasets;
 /**
  * のこぎり波
  */
-public class SawtoothWave extends Function {
+public class SawtoothWave extends Fn {
 
+    public static final boolean IS_SPC = false;
     private double period = 2.0;
     private double amplitude = 1.0;
 

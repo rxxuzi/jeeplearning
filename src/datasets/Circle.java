@@ -1,15 +1,16 @@
+// ========== datasets/Circle.java ==========
 package datasets;
 
 /**
- * アルキメデスの螺旋（パラメトリック表現）
- * パラメータtを入力として、y座標を出力する
- * 表示時のみ(x,y)座標に変換
+ * 円（パラメトリック表現）
+ * x(t) = r*cos(t), y(t) = r*sin(t)
+ * 入力tをパラメータとして使用
  */
-public class Spiral extends Fn {
+public class Circle extends Fn {
 
     public static final boolean IS_SPC = true;
-    private double a = 0.0;  // 初期半径
-    private double b = 0.5;  // 成長率
+
+    private double radius = 1.0;
 
     // 実際のデータのX,Y座標を保持（表示用）
     private double[] displayX;
@@ -19,42 +20,37 @@ public class Spiral extends Fn {
 
     @Override
     public String getName() {
-        return "Spiral";
+        return "Circle";
     }
 
     @Override
     public String getDescription() {
-        return "Archimedean spiral: r = " + a + " + " + b + "θ";
+        return "Unit circle: x² + y² = " + (radius * radius);
     }
 
     @Override
     public double[] getXRange() {
         // パラメータtの範囲
-        return new double[]{0, 4 * Math.PI};
+        return new double[]{0, 2 * Math.PI};
     }
 
     @Override
     public double[] getYRange() {
         // 表示用のY範囲
-        double maxT = 4 * Math.PI;
-        double maxR = a + b * maxT;
-        return new double[]{-maxR, maxR};
+        return new double[]{-radius * 1.5, radius * 1.5};
     }
 
     /**
      * 表示用のX範囲を取得
      */
     public double[] getDisplayXRange() {
-        double maxT = 4 * Math.PI;
-        double maxR = a + b * maxT;
-        return new double[]{-maxR, maxR};
+        return new double[]{-radius * 1.5, radius * 1.5};
     }
 
     @Override
     public double compute(double t) {
         // パラメータtからy座標を計算
-        double r = a + b * t;
-        return r * Math.sin(t);
+        return radius * Math.sin(t);
     }
 
     /**
@@ -63,8 +59,7 @@ public class Spiral extends Fn {
      * @return x座標
      */
     public double computeX(double t) {
-        double r = a + b * t;
-        return r * Math.cos(t);
+        return radius * Math.cos(t);
     }
 
     @Override
@@ -79,7 +74,7 @@ public class Spiral extends Fn {
         trainX = new double[nTrain];  // パラメータt
         trainY = new double[nTrain];  // y座標
         displayX = new double[nTrain]; // 表示用x座標
-        displayY = new double[nTrain]; // 表示用y座標（ノイズ付き）
+        displayY = new double[nTrain]; // 表示用y座標
 
         for (int i = 0; i < nTrain; i++) {
             double t = tMin + (tMax - tMin) * i / (nTrain - 1);
@@ -91,9 +86,9 @@ public class Spiral extends Fn {
             displayY[i] = trainY[i];
         }
 
-        // テストデータの生成（ノイズなし）
-        testX = new double[nTest];  // パラメータt
-        testY = new double[nTest];  // y座標
+        // テストデータの生成
+        testX = new double[nTest];
+        testY = new double[nTest];
         testDisplayX = new double[nTest];
         testDisplayY = new double[nTest];
 
@@ -102,7 +97,6 @@ public class Spiral extends Fn {
             testX[i] = t;
             testY[i] = compute(t);
 
-            // 表示用座標
             testDisplayX[i] = computeX(t);
             testDisplayY[i] = testY[i];
         }

@@ -4,8 +4,9 @@ package datasets;
  * 減衰振動
  * y = A * exp(-γx) * cos(ωx + φ)
  */
-public class DampedOscillation extends Function {
+public class DampedOscillation extends Fn {
 
+    public static final boolean IS_SPC = false;
     private double A = 1.0;      // 初期振幅
     private double gamma = 0.2;  // 減衰係数
     private double omega = 4.0;  // 角周波数

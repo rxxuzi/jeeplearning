@@ -8,9 +8,6 @@ import java.util.Objects;
 import datasets.*;
 import main.Main;
 
-/**
- * メインGUIウィンドウ
- */
 public class GUI extends JFrame {
 
     private final Viewer viewer;
@@ -22,10 +19,10 @@ public class GUI extends JFrame {
     private final JSlider noiseSlider;
     private final JLabel noiseLabel;
 
-    private datasets.Function currentFunction;
+    private Fn currentFn;
 
     public GUI() {
-        super("Function Regression with Deep Learning");
+        super("Fn Regression with Deep Learning");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
@@ -38,11 +35,14 @@ public class GUI extends JFrame {
         controlPanel.setBorder(BorderFactory.createTitledBorder("Controls"));
 
         // 関数選択
-        controlPanel.add(new JLabel("Function:"));
+        controlPanel.add(new JLabel("Fn:"));
         functionSelector = new JComboBox<>(new String[]{
                 "Sin(x)",
                 "Quadratic",
+                "Circle",
                 "Spiral",
+                "Lemniscate",
+                "Limacon",
                 "Gaussian",
                 "Damped Oscillation",
                 "Step Function",
@@ -155,10 +155,13 @@ public class GUI extends JFrame {
         return noiseSlider.getValue() / 100.0;
     }
 
-    public datasets.Function getSelectedFunction() {
+    public Fn getSelectedFunction() {
         String selected = (String) functionSelector.getSelectedItem();
-        datasets.Function function = switch (Objects.requireNonNull(selected)) {
+        Fn function = switch (selected) {
+            case "Circle" -> new Circle();
             case "Spiral" -> new Spiral();
+            case "Lemniscate" -> new Lemniscate();
+            case "Limacon" -> new Limacon();
             case "Quadratic" -> new Quadratic();
             case "Gaussian" -> new Gaussian();
             case "Damped Oscillation" -> new DampedOscillation();
@@ -170,12 +173,12 @@ public class GUI extends JFrame {
         };
 
         // データセット生成
-        function.generateDataset(Main.TRAIN_SIZE, Main.TEST_SIZE, getNoiseRate());
-        currentFunction = function;
+        function.generateDataset(main.Main.TRAIN_SIZE, main.Main.TEST_SIZE, getNoiseRate());
+        currentFn = function;
         return function;
     }
 
-    public datasets.Function getCurrentFunction() {
-        return currentFunction;
+    public Fn getCurrentFunction() {
+        return currentFn;
     }
 }

@@ -1,5 +1,7 @@
 package ui;
 
+import datasets.Fn;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.geom.*;
@@ -64,7 +66,7 @@ public class Viewer extends JPanel {
 
     // 現在の状態
     private volatile int currentEpoch = 0;
-    private datasets.Function currentFunction;
+    private Fn currentFunction;
 
     public Viewer() {
         setBackground(Color.WHITE);
@@ -74,19 +76,45 @@ public class Viewer extends JPanel {
     /**
      * 現在の関数を設定
      */
-    public void setCurrentFunction(datasets.Function function) {
-        this.currentFunction = function;
+    public void setCurrentFunction(Fn fn) {
+        this.currentFunction = fn;
     }
 
     /**
      * 描画範囲を設定
      */
     public void setRanges(double[] xRange, double[] yRange) {
-        if (currentFunction instanceof datasets.Spiral spiral) {
-            double[] displayXRange = spiral.getDisplayXRange();
-            genMinMax(yRange, displayXRange);
+        if (currentFunction instanceof datasets.Spiral ||
+                currentFunction instanceof datasets.Circle ||
+                currentFunction instanceof datasets.Lemniscate ||
+                currentFunction instanceof datasets.Limacon) {
+            // パラメトリック関数の場合は表示用の範囲を使用
+            double[] displayXRange = null;
+
+            if (currentFunction instanceof datasets.Spiral) {
+                displayXRange = ((datasets.Spiral) currentFunction).getDisplayXRange();
+            } else if (currentFunction instanceof datasets.Circle) {
+                displayXRange = ((datasets.Circle) currentFunction).getDisplayXRange();
+            } else if (currentFunction instanceof datasets.Lemniscate) {
+                displayXRange = ((datasets.Lemniscate) currentFunction).getDisplayXRange();
+            } else if (currentFunction instanceof datasets.Limacon) {
+                displayXRange = ((datasets.Limacon) currentFunction).getDisplayXRange();
+            }
+
+            double xMargin = (displayXRange[1] - displayXRange[0]) * 0.1;
+            double yMargin = (yRange[1] - yRange[0]) * 0.1;
+            this.minX = displayXRange[0] - xMargin;
+            this.maxX = displayXRange[1] + xMargin;
+            this.minY = yRange[0] - yMargin;
+            this.maxY = yRange[1] + yMargin;
         } else {
-            genMinMax(yRange, xRange);
+            // 通常の処理
+            double xMargin = (xRange[1] - xRange[0]) * 0.1;
+            double yMargin = (yRange[1] - yRange[0]) * 0.1;
+            this.minX = xRange[0] - xMargin;
+            this.maxX = xRange[1] + xMargin;
+            this.minY = yRange[0] - yMargin;
+            this.maxY = yRange[1] + yMargin;
         }
         repaint();
     }
@@ -106,10 +134,31 @@ public class Viewer extends JPanel {
     public void setTrainData(double[] x, double[] y) {
         List<Point2D.Double> newPoints = new ArrayList<>();
 
-        if (currentFunction instanceof datasets.Spiral spiral) {
-            // Spiralの場合は表示用座標を使用
-            double[] displayX = spiral.getDisplayTrainX();
-            double[] displayY = spiral.getDisplayTrainY();
+        if (currentFunction instanceof datasets.Spiral ||
+                currentFunction instanceof datasets.Circle ||
+                currentFunction instanceof datasets.Lemniscate ||
+                currentFunction instanceof datasets.Limacon) {
+            // パラメトリック関数の場合は表示用座標を使用
+            double[] displayX = null;
+            double[] displayY = null;
+
+            if (currentFunction instanceof datasets.Spiral) {
+                datasets.Spiral func = (datasets.Spiral) currentFunction;
+                displayX = func.getDisplayTrainX();
+                displayY = func.getDisplayTrainY();
+            } else if (currentFunction instanceof datasets.Circle) {
+                datasets.Circle func = (datasets.Circle) currentFunction;
+                displayX = func.getDisplayTrainX();
+                displayY = func.getDisplayTrainY();
+            } else if (currentFunction instanceof datasets.Lemniscate) {
+                datasets.Lemniscate func = (datasets.Lemniscate) currentFunction;
+                displayX = func.getDisplayTrainX();
+                displayY = func.getDisplayTrainY();
+            } else {
+                datasets.Limacon func = (datasets.Limacon) currentFunction;
+                displayX = func.getDisplayTrainX();
+                displayY = func.getDisplayTrainY();
+            }
 
             for (int i = 0; i < displayX.length; i++) {
                 newPoints.add(new Point2D.Double(displayX[i], displayY[i]));
@@ -132,9 +181,8 @@ public class Viewer extends JPanel {
     public void setTestData(double[] x, double[] y) {
         List<Point2D.Double> newPoints = new ArrayList<>();
 
-        if (currentFunction instanceof datasets.Spiral) {
+        if (currentFunction instanceof datasets.Spiral spiral) {
             // Spiralの場合は表示用座標を使用
-            datasets.Spiral spiral = (datasets.Spiral) currentFunction;
             double[] displayX = spiral.getDisplayTestX();
             double[] displayY = spiral.getDisplayTestY();
 
@@ -160,14 +208,28 @@ public class Viewer extends JPanel {
         currentEpoch = epoch;
         List<Point2D.Double> newPoints = new ArrayList<>();
 
-        if (currentFunction instanceof datasets.Spiral spiral) {
-            // Spiralの場合：パラメータtで予測し、表示用に変換
+        if (currentFunction instanceof datasets.Spiral ||
+                currentFunction instanceof datasets.Circle ||
+                currentFunction instanceof datasets.Lemniscate ||
+                currentFunction instanceof datasets.Limacon) {
+            // パラメトリック関数の場合
             double[] tRange = currentFunction.getXRange();
 
             for (int i = 0; i < PREDICTION_POINTS; i++) {
                 double t = tRange[0] + (tRange[1] - tRange[0]) * i / (PREDICTION_POINTS - 1);
                 double predictedY = nn.predict(t);  // tを入力として予測
-                double x = spiral.computeX(t);      // 表示用x座標
+                double x = 0;
+
+                if (currentFunction instanceof datasets.Spiral) {
+                    x = ((datasets.Spiral) currentFunction).computeX(t);
+                } else if (currentFunction instanceof datasets.Circle) {
+                    x = ((datasets.Circle) currentFunction).computeX(t);
+                } else if (currentFunction instanceof datasets.Lemniscate) {
+                    x = ((datasets.Lemniscate) currentFunction).computeX(t);
+                } else if (currentFunction instanceof datasets.Limacon) {
+                    x = ((datasets.Limacon) currentFunction).computeX(t);
+                }
+
                 newPoints.add(new Point2D.Double(x, predictedY));
             }
         } else {
@@ -183,6 +245,7 @@ public class Viewer extends JPanel {
         predictionPoints.addAll(newPoints);
         repaint();
     }
+
 
     /**
      * 損失履歴を追加
@@ -268,32 +331,13 @@ public class Viewer extends JPanel {
                 for (int i = 0; i < TRUE_FUNCTION_POINTS; i++) {
                     double t = tRange[0] + (tRange[1] - tRange[0]) * i / (TRUE_FUNCTION_POINTS - 1);
                     double px = spiral.computeX(t);
-                    double py = spiral.compute(t);
-
-                    int sx = graphX + (int)((px - minX) / (maxX - minX) * graphWidth);
-                    int sy = graphY + graphHeight - (int)((py - minY) / (maxY - minY) * graphHeight);
-
-                    if (first) {
-                        truePath.moveTo(sx, sy);
-                        first = false;
-                    } else {
-                        truePath.lineTo(sx, sy);
-                    }
+                    first = computeXY(graphX, graphY, graphWidth, graphHeight, truePath, first, t, spiral, px - minX);
                 }
             } else {
                 // 通常の関数
                 for (int i = 0; i < TRUE_FUNCTION_POINTS; i++) {
                     double px = minX + (maxX - minX) * i / (TRUE_FUNCTION_POINTS - 1);
-                    double py = currentFunction.compute(px);
-                    int sx = graphX + (int)((px - minX) / (maxX - minX) * graphWidth);
-                    int sy = graphY + graphHeight - (int)((py - minY) / (maxY - minY) * graphHeight);
-
-                    if (first) {
-                        truePath.moveTo(sx, sy);
-                        first = false;
-                    } else {
-                        truePath.lineTo(sx, sy);
-                    }
+                    first = computeXY(graphX, graphY, graphWidth, graphHeight, truePath, first, px, currentFunction, px - minX);
                 }
             }
             g2.draw(truePath);
@@ -334,6 +378,20 @@ public class Viewer extends JPanel {
 
         // 凡例
         drawLegend(g2, graphX + graphWidth - LEGEND_WIDTH - MARGIN, graphY + MARGIN);
+    }
+
+    private boolean computeXY(int graphX, int graphY, int graphWidth, int graphHeight, GeneralPath truePath, boolean first, double px, Fn currentFunction, double v) {
+        double py = currentFunction.compute(px);
+        int sx = graphX + (int)((v) / (maxX - minX) * graphWidth);
+        int sy = graphY + graphHeight - (int)((py - minY) / (maxY - minY) * graphHeight);
+
+        if (first) {
+            truePath.moveTo(sx, sy);
+            first = false;
+        } else {
+            truePath.lineTo(sx, sy);
+        }
+        return first;
     }
 
     /**

@@ -3,14 +3,15 @@ package datasets;
 /**
  * 階段関数（不連続点を含む）
  */
-public class StepFunction extends Function {
+public class StepFunction extends Fn {
 
+    public static final boolean IS_SPC = false;
     private double[] steps = {-2.0, -1.0, 0.0, 1.0, 2.0};
     private double[] values = {-1.0, -0.5, 0.0, 0.5, 1.0, 1.5};
 
     @Override
     public String getName() {
-        return "Step Function";
+        return "Step Fn";
     }
 
     @Override

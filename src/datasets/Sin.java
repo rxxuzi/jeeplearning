@@ -3,7 +3,9 @@ package datasets;
 /**
  * sin(x)関数
  */
-public class Sin extends Function {
+public class Sin extends Fn {
+
+    public static final boolean IS_SPC = false;
 
     @Override
     public String getName() {

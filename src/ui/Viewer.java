@@ -323,23 +323,14 @@ public class Viewer extends JPanel {
             g2.setColor(TRUE_FUNCTION_COLOR);
             g2.setStroke(new BasicStroke(THICK_STROKE));
             GeneralPath truePath = new GeneralPath();
-            boolean first = true;
 
-            if (currentFunction instanceof datasets.Spiral spiral) {
-                // Spiralの場合
-                double[] tRange = currentFunction.getXRange();
-                for (int i = 0; i < TRUE_FUNCTION_POINTS; i++) {
-                    double t = tRange[0] + (tRange[1] - tRange[0]) * i / (TRUE_FUNCTION_POINTS - 1);
-                    double px = spiral.computeX(t);
-                    first = computeXY(graphX, graphY, graphWidth, graphHeight, truePath, first, t, spiral, px - minX);
-                }
+            if (currentFunction.isParametric()) {
+                drawParametricFunction(g2, truePath, graphX, graphY, graphWidth, graphHeight);
             } else {
-                // 通常の関数
-                for (int i = 0; i < TRUE_FUNCTION_POINTS; i++) {
-                    double px = minX + (maxX - minX) * i / (TRUE_FUNCTION_POINTS - 1);
-                    first = computeXY(graphX, graphY, graphWidth, graphHeight, truePath, first, px, currentFunction, px - minX);
-                }
+                // デカルト座標関数の描画
+                drawCartesianFunction(g2, truePath, graphX, graphY, graphWidth, graphHeight);
             }
+
             g2.draw(truePath);
         }
 
@@ -380,18 +371,47 @@ public class Viewer extends JPanel {
         drawLegend(g2, graphX + graphWidth - LEGEND_WIDTH - MARGIN, graphY + MARGIN);
     }
 
-    private boolean computeXY(int graphX, int graphY, int graphWidth, int graphHeight, GeneralPath truePath, boolean first, double px, Fn currentFunction, double v) {
-        double py = currentFunction.compute(px);
-        int sx = graphX + (int)((v) / (maxX - minX) * graphWidth);
+    /**
+     * パラメトリック関数を描画
+     */
+    private void drawParametricFunction(Graphics2D g2, GeneralPath path,
+                                        int graphX, int graphY, int graphWidth, int graphHeight) {
+        double[] tRange = currentFunction.getXRange();
+        boolean first = true;
+
+        for (int i = 0; i < TRUE_FUNCTION_POINTS; i++) {
+            double t = tRange[0] + (tRange[1] - tRange[0]) * i / (TRUE_FUNCTION_POINTS - 1);
+            double px = currentFunction.computeX(t);
+            first = computeXY(path, graphX, graphY, graphWidth, graphHeight, first, t, px);
+        }
+    }
+
+    private boolean computeXY(GeneralPath path, int graphX, int graphY, int graphWidth, int graphHeight, boolean first, double t, double px) {
+        double py = currentFunction.compute(t);
+
+        int sx = graphX + (int)((px - minX) / (maxX - minX) * graphWidth);
         int sy = graphY + graphHeight - (int)((py - minY) / (maxY - minY) * graphHeight);
 
         if (first) {
-            truePath.moveTo(sx, sy);
+            path.moveTo(sx, sy);
             first = false;
         } else {
-            truePath.lineTo(sx, sy);
+            path.lineTo(sx, sy);
         }
         return first;
+    }
+
+    /**
+     * デカルト座標関数を描画
+     */
+    private void drawCartesianFunction(Graphics2D g2, GeneralPath path,
+                                       int graphX, int graphY, int graphWidth, int graphHeight) {
+        boolean first = true;
+
+        for (int i = 0; i < TRUE_FUNCTION_POINTS; i++) {
+            double px = minX + (maxX - minX) * i / (TRUE_FUNCTION_POINTS - 1);
+            first = computeXY(path, graphX, graphY, graphWidth, graphHeight, first, px, px);
+        }
     }
 
     /**

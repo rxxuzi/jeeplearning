@@ -16,6 +16,11 @@ public class Lemniscate extends Fn {
     private double[] testDisplayY;
 
     @Override
+    public boolean isParametric() {
+        return IS_SPC;
+    }
+
+    @Override
     public String getName() {
         return "Lemniscate";
     }

@@ -17,6 +17,23 @@ public abstract class Fn {
     protected double noiseRate = 0.0;
 
     /**
+     * パラメトリック（極座標）関数かどうかを判定
+     * @return パラメトリック関数の場合true
+     */
+    public boolean isParametric() {
+        return false;  // デフォルトはfalse（デカルト座標）
+    }
+
+    /**
+     * パラメトリック関数のX座標を計算（オプション）
+     * @param t パラメータ
+     * @return x座標
+     */
+    public double computeX(double t) {
+        throw new UnsupportedOperationException("This function is not parametric");
+    }
+
+    /**
      * 関数の名前を取得
      * @return 関数名
      */

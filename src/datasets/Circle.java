@@ -19,6 +19,11 @@ public class Circle extends Fn {
     private double[] testDisplayY;
 
     @Override
+    public boolean isParametric() {
+        return IS_SPC;
+    }
+
+    @Override
     public String getName() {
         return "Circle";
     }

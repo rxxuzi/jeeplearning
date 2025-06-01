@@ -22,7 +22,7 @@ public class GUI extends JFrame {
     private Fn currentFn;
 
     public GUI() {
-        super("Fn Regression with Deep Learning");
+        super("Jeeplearning");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 

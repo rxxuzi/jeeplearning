@@ -1,4 +1,4 @@
-package ui;
+package ui.ra;
 
 import datasets.*;
 
@@ -12,7 +12,7 @@ public class GUI extends JFrame {
     private final Viewer viewer;
     private final JLabel statusLabel;
     private final JProgressBar progressBar;
-    private final JButton reloadButton;
+    private final JButton startButton;
     private final JButton stopButton;
     private final JComboBox<String> functionSelector;
     private final JSlider noiseSlider;
@@ -20,8 +20,12 @@ public class GUI extends JFrame {
 
     private Fn currentFn;
 
+    // ActionListenerを保持するフィールド
+    private ActionListener startAction;
+    private ActionListener stopAction;
+
     public GUI() {
-        super("Jeeplearning");
+        super("Jeeplearning - Regression Analysis");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
@@ -34,7 +38,7 @@ public class GUI extends JFrame {
         controlPanel.setBorder(BorderFactory.createTitledBorder("Controls"));
 
         // 関数選択
-        controlPanel.add(new JLabel("Fn:"));
+        controlPanel.add(new JLabel("Function:"));
         functionSelector = new JComboBox<>(new String[]{
                 "Sin(x)",
                 "Quadratic",
@@ -72,14 +76,19 @@ public class GUI extends JFrame {
             noiseLabel.setText(String.format("%.2f", noise));
         });
 
-        // Reloadボタン
+        // Startボタン
         controlPanel.add(Box.createHorizontalStrut(20));
-        reloadButton = new JButton("Reload");
-        reloadButton.setEnabled(false);
-        controlPanel.add(reloadButton);
+        startButton = new JButton("Start Training");
+        startButton.setBackground(new Color(46, 204, 113));
+        startButton.setForeground(Color.BLACK);
+        startButton.setFocusPainted(false);
+        controlPanel.add(startButton);
 
         // Stopボタン
         stopButton = new JButton("Stop");
+        stopButton.setBackground(new Color(231, 76, 60));
+        stopButton.setForeground(Color.BLACK);
+        stopButton.setFocusPainted(false);
         stopButton.setEnabled(false);
         controlPanel.add(stopButton);
 
@@ -89,7 +98,7 @@ public class GUI extends JFrame {
         JPanel statusPanel = new JPanel(new BorderLayout());
         statusPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
-        statusLabel = new JLabel("Initializing...");
+        statusLabel = new JLabel("Ready - Select a function and click 'Start Training'");
         statusPanel.add(statusLabel, BorderLayout.WEST);
 
         progressBar = new JProgressBar(0, 100);
@@ -119,30 +128,29 @@ public class GUI extends JFrame {
         });
     }
 
-    public void setReloadEnabled(boolean enabled) {
-        SwingUtilities.invokeLater(() -> reloadButton.setEnabled(enabled));
+    public void setStartEnabled(boolean enabled) {
+        SwingUtilities.invokeLater(() -> startButton.setEnabled(enabled));
     }
 
     public void setStopEnabled(boolean enabled) {
         SwingUtilities.invokeLater(() -> stopButton.setEnabled(enabled));
     }
 
-    public void setReloadAction(ActionListener action) {
-        // 既存のリスナーを削除
-        for (ActionListener al : reloadButton.getActionListeners()) {
-            reloadButton.removeActionListener(al);
-        }
-        reloadButton.addActionListener(action);
+    public void setStartAction(ActionListener action) {
+        // ActionListenerを保持
+        this.startAction = action;
 
-        // 関数選択が変更されたときも同じアクションを実行
-        functionSelector.addActionListener(e -> {
-            if (reloadButton.isEnabled()) {
-                action.actionPerformed(e);
-            }
-        });
+        // 既存のリスナーを削除
+        for (ActionListener al : startButton.getActionListeners()) {
+            startButton.removeActionListener(al);
+        }
+        startButton.addActionListener(action);
     }
 
     public void setStopAction(ActionListener action) {
+        // ActionListenerを保持
+        this.stopAction = action;
+
         // 既存のリスナーを削除
         for (ActionListener al : stopButton.getActionListeners()) {
             stopButton.removeActionListener(al);
@@ -172,12 +180,34 @@ public class GUI extends JFrame {
         };
 
         // データセット生成
-        function.generateDataset(main.Main.TRAIN_SIZE, main.Main.TEST_SIZE, getNoiseRate());
+        function.generateDataset(Launcher.TRAIN_SIZE, Launcher.TEST_SIZE, getNoiseRate());
         currentFn = function;
         return function;
     }
 
     public Fn getCurrentFunction() {
         return currentFn;
+    }
+
+    // 保持されたActionListenerを返す
+    public ActionListener getStartAction() {
+        return startAction;
+    }
+
+    public ActionListener getStopAction() {
+        return stopAction;
+    }
+
+    // 古いメソッドとの互換性のため
+    public void setReloadEnabled(boolean enabled) {
+        setStartEnabled(enabled);
+    }
+
+    public void setReloadAction(ActionListener action) {
+        setStartAction(action);
+    }
+
+    public ActionListener getReloadAction() {
+        return getStartAction();
     }
 }

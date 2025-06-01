@@ -1,247 +1,382 @@
 package main;
 
-import alg.Backprop;
-import datasets.Fn;
-import ui.GUI;
 import javax.swing.*;
+import java.awt.*;
 
-public class Main {
+public class Main extends JFrame {
 
-    // ハイパーパラメータ
-    public static final int  HIDDEN1_SIZE = 32;      // 隠れ層1のニューロン数
-    public static final int HIDDEN2_SIZE = 16;      // 隠れ層2のニューロン数
-    public static final double LEARNING_RATE = 0.002; // 学習率（Adamに適した値）
-    public static final double L2_LAMBDA = 0.0001;   // L2正則化の強度
-    public static final int EPOCHS = 3000;          // エポック数
-    public static final int TRAIN_SIZE = 1000;      // 訓練データ数
-    public static final int TEST_SIZE = 200;        // テストデータ数
-    private static Thread trainingThread;
-    private static volatile boolean stopTraining = false;
+    private JPanel mainPanel;
+    private CardLayout cardLayout;
 
+    // 各機能のランチャー
+    private ui.ra.Launcher regressionLauncher;
+    private ui.cnn.Launcher cnnLauncher;
 
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            GUI gui = new GUI();
-            gui.setVisible(true);
+    // パネル
+    private JPanel welcomePanel;
+    private JPanel regressionPanel;
+    private JPanel cnnPanel;
 
-            // Stopボタンのアクション設定
-            gui.setStopAction(e -> {
-                stopTraining = true;
-                gui.setStopEnabled(false);
-                gui.setStatus("Stopping training...");
-            });
-
-            // Reloadボタンのアクション設定
-            gui.setReloadAction(e -> {
-                // 実行中の学習を停止
-                if (trainingThread != null && trainingThread.isAlive()) {
-                    stopTraining = true;
-                    gui.setStopEnabled(false);
-                    try {
-                        trainingThread.join(1000);
-                    } catch (InterruptedException ex) {
-                        ex.printStackTrace();
-                    }
-                }
-
-                // 新しい学習を開始
-                stopTraining = false;
-                gui.getViewer().clearHistory();
-                gui.getViewer().clearPredictions();
-                trainingThread = new Thread(() -> runTraining(gui));
-                trainingThread.start();
-            });
-
-            // 初回の学習を開始
-            trainingThread = new Thread(() -> runTraining(gui));
-            trainingThread.start();
-        });
+    public Main() {
+        super("Jeeplearning - Deep Learning in Pure Java");
+        initializeUI();
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setSize(1400, 900);
+        setLocationRelativeTo(null);
     }
 
-    private static void runTraining(GUI gui) {
-        gui.setReloadEnabled(false);
-        gui.setStopEnabled(true);  // 学習開始時にStopボタンを有効化
-        gui.setProgress(0);
-
-
+    private void initializeUI() {
+        // システムのルックアンドフィールを使用
         try {
-            // データセットの生成
-            gui.setStatus("Generating dataset...");
-            Fn fn = gui.getSelectedFunction();
-
-            double[] trainX = fn.getTrainX();
-            double[] trainY = fn.getTrainY();
-            double[] testX = fn.getTestX();
-            double[] testY = fn.getTestY();
-
-            // ビューアーの設定
-            gui.getViewer().setCurrentFunction(fn);
-            gui.getViewer().setRanges(fn.getXRange(), fn.getYRange());
-            gui.getViewer().setTrainData(trainX, trainY);
-            gui.getViewer().setTestData(testX, testY);
-
-            // ニューラルネットワークの初期化
-            gui.setStatus("Initializing neural network...");
-            System.out.println("\n=== Neural Network Configuration ===");
-            System.out.println("Fn: " + fn.getName() + " - " + fn.getDescription());
-            System.out.println("Architecture: Input(1) -> Hidden1(" + HIDDEN1_SIZE +
-                    ") -> Hidden2(" + HIDDEN2_SIZE + ") -> Output(1)");
-            System.out.println("Activation: tanh (hidden layers), identity (output layer)");
-            System.out.println("Optimizer: Adam (lr=" + LEARNING_RATE + ")");
-            System.out.println("Regularization: L2 (lambda=" + L2_LAMBDA + ")");
-            System.out.println("Noise Rate: " + gui.getNoiseRate());
-            System.out.println("=====================================\n");
-
-            Backprop nn = new Backprop(1, HIDDEN1_SIZE, HIDDEN2_SIZE, 1, LEARNING_RATE, L2_LAMBDA);
-
-            // 学習
-            gui.setStatus("Training neural network...");
-            double bestTestLoss = Double.MAX_VALUE;
-            int bestEpoch = 0;
-
-            // 早期停止のためのパラメータ
-            int patience = 500;
-            int patienceCounter = 0;
-
-            for (int epoch = 0; epoch < EPOCHS; epoch++) {
-                if (stopTraining) {
-                    gui.setStatus("Training stopped by user");
-                    break;
-                }
-
-                double totalLoss = 0.0;
-
-                // ミニバッチ風にランダムな順序で学習
-                int[] indices = new int[TRAIN_SIZE];
-                for (int i = 0; i < TRAIN_SIZE; i++) indices[i] = i;
-                shuffleArray(indices);
-
-                // エポックごとに全訓練データで学習
-                for (int i : indices) {
-                    if (stopTraining) break;
-                    double loss = nn.train(trainX[i], trainY[i]);
-                    totalLoss += loss;
-                }
-
-                if (stopTraining) break;
-
-                double avgLoss = totalLoss / TRAIN_SIZE;
-
-                // 進捗更新
-                gui.setProgress((epoch + 1) * 100 / EPOCHS);
-
-                // 10エポックごとに表示更新
-                if ((epoch + 1) % 10 == 0) {
-                    gui.getViewer().updatePredictions(nn, epoch + 1);
-                    gui.getViewer().addLossHistory(epoch + 1, avgLoss);
-
-                    // 50エポックごとに詳細を表示
-                    if ((epoch + 1) % 50 == 0) {
-                        double testLoss = evaluateTestSet(nn, testX, testY);
-                        System.out.printf("Epoch %4d: Train Loss = %.6f, Test Loss = %.6f%n",
-                                epoch + 1, avgLoss, testLoss);
-                        gui.setStatus(String.format("Epoch %d: Train Loss = %.6f, Test Loss = %.6f",
-                                epoch + 1, avgLoss, testLoss));
-
-                        // 早期停止の判定
-                        if (testLoss < bestTestLoss) {
-                            bestTestLoss = testLoss;
-                            bestEpoch = epoch + 1;
-                            patienceCounter = 0;
-                        } else {
-                            patienceCounter += 50;
-                            if (patienceCounter >= patience && epoch > 1000) {
-                                System.out.println("Early stopping triggered at epoch " + (epoch + 1));
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (!stopTraining) {
-                // 最終評価
-                gui.setStatus("Training completed!");
-                System.out.println("\n=== Training Completed! ===");
-                double finalTestLoss = evaluateTestSet(nn, testX, testY);
-                System.out.printf("Final test loss: %.6f%n", finalTestLoss);
-                System.out.printf("Best test loss: %.6f (at epoch %d)%n", bestTestLoss, bestEpoch);
-
-                // ノイズのないデータでの評価
-                System.out.println("\n=== Evaluation on Clean Data ===");
-                double cleanLoss = evaluateCleanData(nn, fn);
-                System.out.printf("Loss on clean fn: %.6f%n", cleanLoss);
-
-                // サンプル予測の表示
-                System.out.println("\n=== Sample Predictions ===");
-                System.out.println("       x        |    True y      |   Prediction   |     Error");
-                System.out.println("----------------|----------------|----------------|---------------");
-                for (int i = 0; i < Math.min(10, testX.length); i++) {
-                    int idx = i * (testX.length / 10);
-                    double x = testX[idx];
-                    double yTrue = testY[idx];
-                    double yPred = nn.predict(x);
-                    double error = Math.abs(yTrue - yPred);
-                    System.out.printf("%14.6f | %14.6f | %14.6f | %14.6f%n", x, yTrue, yPred, error);
-                }
-
-                // 最終的な予測を表示
-                gui.getViewer().updatePredictions(nn, bestEpoch);
-            }
-
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception e) {
             e.printStackTrace();
-            gui.setStatus("Error: " + e.getMessage());
-        } finally {
-            gui.setReloadEnabled(true);
-            gui.setStopEnabled(false);  // 学習終了時にStopボタンを無効化
-            if (!stopTraining) {
-                gui.setProgress(100);
+        }
+
+        // メニューバーの設定
+        setJMenuBar(createMenuBar());
+
+        // カードレイアウトでパネルを切り替え
+        cardLayout = new CardLayout();
+        mainPanel = new JPanel(cardLayout);
+
+        // ウェルカムパネル
+        welcomePanel = createWelcomePanel();
+        mainPanel.add(welcomePanel, "welcome");
+
+        // プレースホルダーパネル（遅延初期化用）
+        mainPanel.add(new JPanel(), "regression");
+        mainPanel.add(new JPanel(), "cnn");
+
+        add(mainPanel);
+
+        // 初期表示はウェルカムパネル
+        cardLayout.show(mainPanel, "welcome");
+    }
+
+    private JMenuBar createMenuBar() {
+        JMenuBar menuBar = new JMenuBar();
+
+        // Fileメニュー
+        JMenu fileMenu = new JMenu("File");
+        fileMenu.setMnemonic('F');
+
+        JMenuItem exitItem = new JMenuItem("Exit");
+        exitItem.setAccelerator(KeyStroke.getKeyStroke("ctrl Q"));
+        exitItem.addActionListener(e -> System.exit(0));
+        fileMenu.add(exitItem);
+        menuBar.add(fileMenu);
+
+        // Applicationメニュー
+        JMenu appMenu = new JMenu("Applications");
+        appMenu.setMnemonic('A');
+
+        JMenuItem homeItem = new JMenuItem("Home");
+        homeItem.setAccelerator(KeyStroke.getKeyStroke("ctrl H"));
+        homeItem.addActionListener(e -> showPanel("welcome"));
+        appMenu.add(homeItem);
+
+        appMenu.addSeparator();
+
+        JMenuItem regressionItem = new JMenuItem("Function Regression");
+        regressionItem.setAccelerator(KeyStroke.getKeyStroke("ctrl R"));
+        regressionItem.addActionListener(e -> showRegressionAnalysis());
+        appMenu.add(regressionItem);
+
+        JMenuItem cnnItem = new JMenuItem("Digit Recognition (CNN)");
+        cnnItem.setAccelerator(KeyStroke.getKeyStroke("ctrl D"));
+        cnnItem.addActionListener(e -> showCNN());
+        appMenu.add(cnnItem);
+
+        menuBar.add(appMenu);
+
+        // Windowメニュー
+        JMenu windowMenu = new JMenu("Window");
+        windowMenu.setMnemonic('W');
+
+        JMenuItem fullscreenItem = new JMenuItem("Toggle Fullscreen");
+        fullscreenItem.setAccelerator(KeyStroke.getKeyStroke("F11"));
+        fullscreenItem.addActionListener(e -> toggleFullscreen());
+        windowMenu.add(fullscreenItem);
+
+        menuBar.add(windowMenu);
+
+        // Helpメニュー
+        JMenu helpMenu = new JMenu("Help");
+        helpMenu.setMnemonic('H');
+
+        JMenuItem tutorialItem = new JMenuItem("Tutorial");
+        tutorialItem.addActionListener(e -> showTutorial());
+        helpMenu.add(tutorialItem);
+
+        helpMenu.addSeparator();
+
+        JMenuItem aboutItem = new JMenuItem("About");
+        aboutItem.addActionListener(e -> showAboutDialog());
+        helpMenu.add(aboutItem);
+
+        menuBar.add(helpMenu);
+
+        return menuBar;
+    }
+
+    private JPanel createWelcomePanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(new Color(240, 240, 240));
+
+        // タイトル部分
+        JPanel titlePanel = new JPanel();
+        titlePanel.setOpaque(false);
+        titlePanel.setLayout(new BoxLayout(titlePanel, BoxLayout.Y_AXIS));
+
+        // タイトル
+        titlePanel.add(Box.createVerticalStrut(50));
+
+        JLabel titleLabel = new JLabel("Jeeplearning");
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 48));
+        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        titlePanel.add(Box.createVerticalStrut(10));
+        titlePanel.add(titleLabel);
+
+        JLabel subtitleLabel = new JLabel("Deep Learning in Pure Java");
+        subtitleLabel.setFont(new Font("Arial", Font.PLAIN, 20));
+        subtitleLabel.setForeground(new Color(100, 100, 100));
+        subtitleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        titlePanel.add(Box.createVerticalStrut(10));
+        titlePanel.add(subtitleLabel);
+
+        panel.add(titlePanel, BorderLayout.NORTH);
+
+        // 機能選択ボタン
+        JPanel buttonPanel = new JPanel(new GridBagLayout());
+        buttonPanel.setOpaque(false);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(20, 20, 20, 20);
+
+        // 回帰分析ボタン
+        JButton regressionButton = createFeatureButton(
+                "Function Regression",
+                "Neural network regression analysis for various mathematical functions",
+                new Color(52, 152, 219)
+        );
+        regressionButton.addActionListener(e -> showRegressionAnalysis());
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        buttonPanel.add(regressionButton, gbc);
+
+        // CNN手書き認識ボタン
+        JButton cnnButton = createFeatureButton(
+                "Digit Recognition (CNN)",
+                "Handwritten digit recognition using Convolutional Neural Networks",
+                new Color(46, 204, 113)
+        );
+        cnnButton.addActionListener(e -> showCNN());
+        gbc.gridx = 1;
+        gbc.gridy = 0;
+        buttonPanel.add(cnnButton, gbc);
+
+        // 将来の機能用プレースホルダー
+        JButton autoencoderButton = createFeatureButton(
+                "Image Reconstruction",
+                "Coming soon: Self-supervised learning with autoencoders",
+                new Color(155, 89, 182)
+        );
+        autoencoderButton.setEnabled(false);
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        buttonPanel.add(autoencoderButton, gbc);
+
+        JButton ganButton = createFeatureButton(
+                "Image Generation",
+                "Coming soon: Generative Adversarial Networks",
+                new Color(241, 196, 15)
+        );
+        ganButton.setEnabled(false);
+        gbc.gridx = 1;
+        gbc.gridy = 1;
+        buttonPanel.add(ganButton, gbc);
+
+        panel.add(buttonPanel, BorderLayout.CENTER);
+
+        // フッター
+        JPanel footerPanel = new JPanel();
+        footerPanel.setOpaque(false);
+        footerPanel.setLayout(new BoxLayout(footerPanel, BoxLayout.Y_AXIS));
+
+        JLabel footerLabel = new JLabel("Pure Java implementation - No external ML libraries required");
+        footerLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        footerLabel.setFont(new Font("Arial", Font.ITALIC, 14));
+        footerLabel.setForeground(new Color(120, 120, 120));
+        footerPanel.add(footerLabel);
+
+        JLabel versionLabel = new JLabel("Version 1.0");
+        versionLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        versionLabel.setFont(new Font("Arial", Font.PLAIN, 12));
+        versionLabel.setForeground(new Color(150, 150, 150));
+        footerPanel.add(Box.createVerticalStrut(5));
+        footerPanel.add(versionLabel);
+
+        footerPanel.add(Box.createVerticalStrut(20));
+        panel.add(footerPanel, BorderLayout.SOUTH);
+
+        return panel;
+    }
+
+    private JButton createFeatureButton(String title, String description, Color color) {
+        JButton button = new JButton();
+        button.setLayout(new BorderLayout());
+        button.setPreferredSize(new Dimension(320, 160));
+
+        JPanel contentPanel = new JPanel();
+        contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
+        contentPanel.setOpaque(false);
+        contentPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        contentPanel.add(Box.createVerticalStrut(10));
+
+        JLabel titleLabel = new JLabel(title);
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 18));
+        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        contentPanel.add(titleLabel);
+
+        contentPanel.add(Box.createVerticalStrut(10));
+
+        JTextArea descLabel = new JTextArea(description);
+        descLabel.setFont(new Font("Arial", Font.PLAIN, 12));
+        descLabel.setLineWrap(true);
+        descLabel.setWrapStyleWord(true);
+        descLabel.setOpaque(false);
+        descLabel.setEditable(false);
+        descLabel.setFocusable(false);
+        descLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        contentPanel.add(descLabel);
+
+        button.add(contentPanel);
+
+        // スタイリング
+        button.setBackground(color);
+        button.setForeground(Color.WHITE);
+        button.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(color.darker(), 2),
+                BorderFactory.createEmptyBorder(10, 10, 10, 10)
+        ));
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        // ホバーエフェクト
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                button.setBackground(color.brighter());
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                button.setBackground(color);
+            }
+        });
+
+        return button;
+    }
+
+    private void showPanel(String name) {
+        cardLayout.show(mainPanel, name);
+    }
+
+    /**
+     * 回帰分析を表示
+     */
+    private void showRegressionAnalysis() {
+        // 遅延初期化
+        if (regressionLauncher == null) {
+            regressionLauncher = new ui.ra.Launcher();
+            Container contentPane = regressionLauncher.getGUI().getContentPane();
+            if (contentPane instanceof JPanel) {
+                regressionPanel = (JPanel) contentPane;
+            } else {
+                regressionPanel = new JPanel(new BorderLayout());
+                regressionPanel.add(contentPane);
+            }
+            mainPanel.add(regressionPanel, "regression");
+        }
+
+        showPanel("regression");
+
+        // 自動開始は削除（手動でStartボタンを押す）
+    }
+
+    /**
+     * CNN手書き認識を表示
+     */
+    private void showCNN() {
+        // 遅延初期化
+        if (cnnLauncher == null) {
+            cnnLauncher = new ui.cnn.Launcher();
+            Container contentPane = cnnLauncher.getGUI().getContentPane();
+            if (contentPane instanceof JPanel) {
+                cnnPanel = (JPanel) contentPane;
+            } else {
+                cnnPanel = new JPanel(new BorderLayout());
+                cnnPanel.add(contentPane);
+            }
+            mainPanel.add(cnnPanel, "cnn");
+        }
+
+        showPanel("cnn");
+    }
+
+    /**
+     * フルスクリーン切り替え
+     */
+    private void toggleFullscreen() {
+        GraphicsDevice device = GraphicsEnvironment
+                .getLocalGraphicsEnvironment()
+                .getDefaultScreenDevice();
+
+        if (device.isFullScreenSupported()) {
+            if (device.getFullScreenWindow() == null) {
+                device.setFullScreenWindow(this);
+            } else {
+                device.setFullScreenWindow(null);
             }
         }
     }
 
-    /**
-     * クリーンなデータ（ノイズなし）での評価
-     */
-    private static double evaluateCleanData(Backprop nn, Fn fn) {
-        double totalLoss = 0.0;
-        int numPoints = 100;
+    private void showTutorial() {
+        String tutorial = "Welcome to Jeeplearning!\n\n" +
+                "1. Function Regression:\n" +
+                "   - Select a function from the dropdown\n" +
+                "   - Adjust noise level with the slider\n" +
+                "   - Click 'Reload' to retrain\n\n" +
+                "2. Digit Recognition:\n" +
+                "   - Draw a digit with your mouse\n" +
+                "   - See real-time predictions\n" +
+                "   - Train the model for better accuracy\n\n" +
+                "Use Ctrl+R for Regression, Ctrl+D for Digit Recognition";
 
-        double[] xRange = fn.getXRange();
-        for (int i = 0; i < numPoints; i++) {
-            double x = xRange[0] + (xRange[1] - xRange[0]) * i / (numPoints - 1);
-            double yTrue = fn.compute(x);
-            double yPred = nn.predict(x);
-            double diff = yPred - yTrue;
-            totalLoss += 0.5 * diff * diff;
-        }
-        return totalLoss / numPoints;
+        JOptionPane.showMessageDialog(this, tutorial, "Tutorial",
+                JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    private void showAboutDialog() {
+        String message = "Jeeplearning v1.0\n\n" +
+                "A pure Java implementation of deep learning algorithms\n" +
+                "including neural networks, CNNs, and more.\n\n" +
+                "Features:\n" +
+                "• Function Regression with Neural Networks\n" +
+                "• Handwritten Digit Recognition with CNN\n" +
+                "• No external ML libraries required\n\n" +
+                "Created as an educational project to understand\n" +
+                "deep learning from first principles.\n\n" +
+                "© 2025 Jeeplearning Project";
+
+        JOptionPane.showMessageDialog(this, message, "About Jeeplearning",
+                JOptionPane.INFORMATION_MESSAGE);
     }
 
     /**
-     * テストセットでの評価
+     * メインメソッド
      */
-    private static double evaluateTestSet(Backprop nn, double[] testX, double[] testY) {
-        double totalLoss = 0.0;
-        for (int i = 0; i < testX.length; i++) {
-            double pred = nn.predict(testX[i]);
-            double diff = pred - testY[i];
-            totalLoss += 0.5 * diff * diff;
-        }
-        return totalLoss / testX.length;
-    }
-
-    /**
-     * 配列をシャッフル（Fisher-Yates）
-     */
-    private static void shuffleArray(int[] array) {
-        java.util.Random rand = new java.util.Random();
-        for (int i = array.length - 1; i > 0; i--) {
-            int index = rand.nextInt(i + 1);
-            int temp = array[index];
-            array[index] = array[i];
-            array[i] = temp;
-        }
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            Main app = new Main();
+            app.setVisible(true);
+        });
     }
 }

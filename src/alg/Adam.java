@@ -8,19 +8,27 @@ import math.Matrix;
  */
 public class Adam {
 
-    private double beta1 = 0.9;
-    private double beta2 = 0.999;
-    private double epsilon = 1e-8;
-    private double learningRate;
+    private final double beta1 = 0.9;
+    private final double beta2 = 0.999;
+    private final double epsilon = 1e-8;
+    private final double learningRate;
     private int t = 0;
 
     // 1次モーメント
-    private double[][] mW1, mW2, mW3;
-    private double[] mb1, mb2, mb3;
+    private final double[][] mW1;
+    private final double[][] mW2;
+    private final double[][] mW3;
+    private final double[] mb1;
+    private final double[] mb2;
+    private final double[] mb3;
 
     // 2次モーメント
-    private double[][] vW1, vW2, vW3;
-    private double[] vb1, vb2, vb3;
+    private final double[][] vW1;
+    private final double[][] vW2;
+    private final double[][] vW3;
+    private final double[] vb1;
+    private final double[] vb2;
+    private final double[] vb3;
 
     public Adam(double learningRate, int hidden1Size, int hidden2Size) {
         this.learningRate = learningRate;

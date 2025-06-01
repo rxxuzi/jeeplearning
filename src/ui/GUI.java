@@ -1,12 +1,11 @@
 package ui;
 
+import datasets.*;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionListener;
 import java.util.Objects;
-
-import datasets.*;
-import main.Main;
 
 public class GUI extends JFrame {
 
@@ -157,7 +156,7 @@ public class GUI extends JFrame {
 
     public Fn getSelectedFunction() {
         String selected = (String) functionSelector.getSelectedItem();
-        Fn function = switch (selected) {
+        Fn function = switch (Objects.requireNonNull(selected)) {
             case "Circle" -> new Circle();
             case "Spiral" -> new Spiral();
             case "Lemniscate" -> new Lemniscate();

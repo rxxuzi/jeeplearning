@@ -97,33 +97,23 @@ public class Viewer extends JPanel {
                 displayXRange = ((datasets.Circle) currentFunction).getDisplayXRange();
             } else if (currentFunction instanceof datasets.Lemniscate) {
                 displayXRange = ((datasets.Lemniscate) currentFunction).getDisplayXRange();
-            } else if (currentFunction instanceof datasets.Limacon) {
+            } else {
                 displayXRange = ((datasets.Limacon) currentFunction).getDisplayXRange();
             }
 
-            double xMargin = (displayXRange[1] - displayXRange[0]) * 0.1;
-            double yMargin = (yRange[1] - yRange[0]) * 0.1;
-            this.minX = displayXRange[0] - xMargin;
-            this.maxX = displayXRange[1] + xMargin;
-            this.minY = yRange[0] - yMargin;
-            this.maxY = yRange[1] + yMargin;
+            genMinMax(displayXRange, yRange);
         } else {
             // 通常の処理
-            double xMargin = (xRange[1] - xRange[0]) * 0.1;
-            double yMargin = (yRange[1] - yRange[0]) * 0.1;
-            this.minX = xRange[0] - xMargin;
-            this.maxX = xRange[1] + xMargin;
-            this.minY = yRange[0] - yMargin;
-            this.maxY = yRange[1] + yMargin;
+            genMinMax(xRange, yRange);
         }
         repaint();
     }
 
-    private void genMinMax(double[] yRange, double[] displayXRange) {
-        double xMargin = (displayXRange[1] - displayXRange[0]) * 0.1;
+    private void genMinMax(double[] xRange, double[] yRange) {
+        double xMargin = (xRange[1] - xRange[0]) * 0.1;
         double yMargin = (yRange[1] - yRange[0]) * 0.1;
-        this.minX = displayXRange[0] - xMargin;
-        this.maxX = displayXRange[1] + xMargin;
+        this.minX = xRange[0] - xMargin;
+        this.maxX = xRange[1] + xMargin;
         this.minY = yRange[0] - yMargin;
         this.maxY = yRange[1] + yMargin;
     }
@@ -139,8 +129,8 @@ public class Viewer extends JPanel {
                 currentFunction instanceof datasets.Lemniscate ||
                 currentFunction instanceof datasets.Limacon) {
             // パラメトリック関数の場合は表示用座標を使用
-            double[] displayX = null;
-            double[] displayY = null;
+            double[] displayX;
+            double[] displayY;
 
             if (currentFunction instanceof datasets.Spiral) {
                 datasets.Spiral func = (datasets.Spiral) currentFunction;
@@ -221,13 +211,13 @@ public class Viewer extends JPanel {
                 double x = 0;
 
                 if (currentFunction instanceof datasets.Spiral) {
-                    x = ((datasets.Spiral) currentFunction).computeX(t);
+                    x = currentFunction.computeX(t);
                 } else if (currentFunction instanceof datasets.Circle) {
-                    x = ((datasets.Circle) currentFunction).computeX(t);
+                    x = currentFunction.computeX(t);
                 } else if (currentFunction instanceof datasets.Lemniscate) {
-                    x = ((datasets.Lemniscate) currentFunction).computeX(t);
+                    x = currentFunction.computeX(t);
                 } else if (currentFunction instanceof datasets.Limacon) {
-                    x = ((datasets.Limacon) currentFunction).computeX(t);
+                    x = currentFunction.computeX(t);
                 }
 
                 newPoints.add(new Point2D.Double(x, predictedY));
@@ -325,10 +315,10 @@ public class Viewer extends JPanel {
             GeneralPath truePath = new GeneralPath();
 
             if (currentFunction.isParametric()) {
-                drawParametricFunction(g2, truePath, graphX, graphY, graphWidth, graphHeight);
+                drawParametricFunction(truePath, graphX, graphY, graphWidth, graphHeight);
             } else {
                 // デカルト座標関数の描画
-                drawCartesianFunction(g2, truePath, graphX, graphY, graphWidth, graphHeight);
+                drawCartesianFunction(truePath, graphX, graphY, graphWidth, graphHeight);
             }
 
             g2.draw(truePath);
@@ -374,8 +364,7 @@ public class Viewer extends JPanel {
     /**
      * パラメトリック関数を描画
      */
-    private void drawParametricFunction(Graphics2D g2, GeneralPath path,
-                                        int graphX, int graphY, int graphWidth, int graphHeight) {
+    private void drawParametricFunction(GeneralPath path, int graphX, int graphY, int graphWidth, int graphHeight) {
         double[] tRange = currentFunction.getXRange();
         boolean first = true;
 
@@ -404,10 +393,8 @@ public class Viewer extends JPanel {
     /**
      * デカルト座標関数を描画
      */
-    private void drawCartesianFunction(Graphics2D g2, GeneralPath path,
-                                       int graphX, int graphY, int graphWidth, int graphHeight) {
+    private void drawCartesianFunction(GeneralPath path, int graphX, int graphY, int graphWidth, int graphHeight) {
         boolean first = true;
-
         for (int i = 0; i < TRUE_FUNCTION_POINTS; i++) {
             double px = minX + (maxX - minX) * i / (TRUE_FUNCTION_POINTS - 1);
             first = computeXY(path, graphX, graphY, graphWidth, graphHeight, first, px, px);

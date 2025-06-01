@@ -6,10 +6,10 @@ import math.Matrix;
 
 public class Backprop {
 
-    private FWD fwd;
-    private BWD bwd;
-    private Adam adam;
-    private double l2Lambda; // L2正則化の強度
+    private final FWD fwd;
+    private final BWD bwd;
+    private final Adam adam;
+    private final double l2Lambda; // L2正則化の強度
 
     /**
      * コンストラクタ（2層隠れ層）

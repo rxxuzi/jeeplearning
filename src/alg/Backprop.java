@@ -1,13 +1,12 @@
 package alg;
 
-import calc.FWD;
-import calc.BWD;
-import math.Matrix;
+import calc.Backward;
+import calc.Forward;
 
 public class Backprop {
 
-    private final FWD fwd;
-    private final BWD bwd;
+    private final Forward fwd;
+    private final Backward bwd;
     private final Adam adam;
     private final double l2Lambda; // L2正則化の強度
 
@@ -22,8 +21,8 @@ public class Backprop {
      */
     public Backprop(int inputSize, int hidden1Size, int hidden2Size, int outputSize,
                     double learningRate, double l2Lambda) {
-        this.fwd = new FWD(inputSize, hidden1Size, hidden2Size, outputSize);
-        this.bwd = new BWD();
+        this.fwd = new Forward(inputSize, hidden1Size, hidden2Size, outputSize);
+        this.bwd = new Backward();
         this.adam = new Adam(learningRate, hidden1Size, hidden2Size);
         this.l2Lambda = l2Lambda;
     }

@@ -8,7 +8,7 @@ import alg.MSE;
  * 逆伝播（Backward Propagation）の計算
  * 改良版：複数の隠れ層をサポート
  */
-public class BWD {
+public class Backward {
 
     // 勾配
     private double[][] gradW1;
@@ -24,7 +24,7 @@ public class BWD {
      * @param y 正解値
      * @return 損失値
      */
-    public double backward(FWD fwd, double y) {
+    public double backward(Forward fwd, double y) {
         // 損失の計算
         double loss = MSE.calculate(fwd.getA3(), y);
 

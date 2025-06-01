@@ -10,7 +10,7 @@ public class Circle extends Fn {
 
     public static final boolean IS_SPC = true;
 
-    private double radius = 1.0;
+    private final double radius = 1.0;
 
     // 実際のデータのX,Y座標を保持（表示用）
     private double[] displayX;

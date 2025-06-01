@@ -1,6 +1,7 @@
 package alg;
 
-import math.Matrix;
+import calc.Backward;
+import calc.Forward;
 
 /**
  * Adam最適化アルゴリズム
@@ -53,7 +54,7 @@ public class Adam {
     /**
      * Adamによる重み更新
      */
-    public void update(calc.FWD fwd, calc.BWD bwd) {
+    public void update(Forward fwd, Backward bwd) {
         t++;
 
         // バイアス補正項

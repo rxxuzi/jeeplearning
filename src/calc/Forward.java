@@ -7,7 +7,7 @@ import alg.Tanh;
  * 順伝播（Forward Propagation）の計算
  * 改良版：複数の隠れ層をサポート
  */
-public class FWD {
+public class Forward {
 
     // ネットワークの重みとバイアス
     private double[][] W1;  // 隠れ層1の重み
@@ -34,7 +34,7 @@ public class FWD {
      * @param hidden2Size 隠れ層2のサイズ
      * @param outputSize 出力層のサイズ
      */
-    public FWD(int inputSize, int hidden1Size, int hidden2Size, int outputSize) {
+    public Forward(int inputSize, int hidden1Size, int hidden2Size, int outputSize) {
         // He初期化（ReLU用）をTanh用に調整
         double scale1 = Math.sqrt(2.0 / inputSize) * 0.8;
         double scale2 = Math.sqrt(2.0 / hidden1Size) * 0.8;
